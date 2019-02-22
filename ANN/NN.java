@@ -107,8 +107,6 @@ public class NN {
 					double q = wo[layerSize - 1][k];
 					delta[layerSize - 1][k] = (op.TC(correctGroup, k) - q) * diffAF(q);
 
-					// System.out.println(groupPositionArray[correctGroup][k]+" "+q+" "+diffAF(q)+"
-					// "+delta[layerSize - 1][k]);
 
 				}
 
@@ -163,8 +161,7 @@ public class NN {
 				double r[] = calIdRate(w, traindatas, false);
 				Irate = r[0];// 預測辨識率
 				E = r[1];
-				System.out.println(Irate + "\t" + E);
-
+				//System.out.println(Irate + "\t" + E);
 			}
 			if (lr > mlr) {// 判斷學習率是否小於最小值
 				lr *= (1.0 - lDR);
@@ -178,10 +175,6 @@ public class NN {
 			wBest = clone(w);
 		}
 
-		/*
-		 * double r[] = calIdRate(wBest, testdatas, true);// 測試資料辨識率 Irate = r[0];//
-		 * 預測辨識率 E = r[1];
-		 */
 	}
 
 	// 計算結果
@@ -197,8 +190,6 @@ public class NN {
 				sum += data[m] * w[0][k][m + 1];
 			}
 			wo[0][k] = AF(sum);
-			// System.out.println(sum+" "+wo[0][k]);
-			// wo[0][k] = 1 / (1 + Math.exp(sum * -1));
 		}
 		for (int j = 1; j < layerSize; j++) {// 隱藏層內
 			for (int k = 0; k < layers[j]; k++) {
@@ -207,8 +198,6 @@ public class NN {
 					sum += wo[j - 1][m] * w[j][k][m + 1];
 				}
 				wo[j][k] = AF(sum);
-				// System.out.println(sum+" "+wo[0][k]);
-				// wo[j][k] = 1 / (1 + Math.exp(sum * -1));
 			}
 		}
 		// 確定資料集輸出的分群
@@ -323,8 +312,6 @@ public class NN {
 				correct += 1;
 			}
 
-			// System.out.println(wo[layerSize - 1][0]+"\t"+wo[layerSize -
-			// 1][1]+"\t"+output+"\t"+correctGroup);
 		}
 		Irate = (double) correct / (double) datasLocal.size();// 預測辨識率
 		E /= 2 * op.OPLSize() * datasLocal.size();

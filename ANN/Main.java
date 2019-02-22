@@ -7,7 +7,6 @@ import javafx.geometry.*;
 import javafx.scene.*;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.ScatterChart;
-import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.*;
@@ -17,7 +16,6 @@ public class Main extends Application {
 	File file;
 	FileChooser fc = new FileChooser();
 
-	
 	OP op;
 
 	DataSet dataSet;
@@ -58,6 +56,8 @@ public class Main extends Application {
 	}
 
 	public void start(Stage stage) throws Exception {
+		String filePath = new File(this.getClass().getProtectionDomain().getCodeSource().getLocation().getPath())
+				.getParent();
 
 		// GUI
 		lrl = new Label("LearnRate :");
@@ -72,25 +72,20 @@ public class Main extends Application {
 		TextField hlf = new TextField();// LayerField
 		Label hll2 = new Label("\"5 4\"=2層隱藏層,第1層5個神經元,第2層4個神經元");
 
-		
-		// 開啟檔案設定
-		//String path = getClass().getResource("dataset/").getPath();// /bin/package/
-		
-		//fc.setInitialDirectory(new File(path));
-		 
-		
+		fc.setInitialDirectory(new File(filePath + "\\dataset"));
+
 		// 讀取檔案,資料集整理,輸出資料圖
 		lf = new Button("LoadFile");
 		lf.setOnMouseClicked(e -> {
-			
-			file = fc.showOpenDialog(null);//stage
+			text.setText(filePath);
+
+			file = fc.showOpenDialog(null);// stage
 			try {
-			dataSet = new DataSet(file);
+				dataSet = new DataSet(file);
 			} catch (Exception ex) {
 				ex.printStackTrace();
-			} 
-			
-			
+			}
+
 			// 繪圖
 			scE.getData().clear();
 			dataSet.draw(scE, dataSet.datas);
@@ -104,7 +99,7 @@ public class Main extends Application {
 			// load properties
 			Properties properties = new Properties();
 			try {
-				properties.load(new FileInputStream(getClass().getResource("config/config.properties").getPath()));
+				properties.load(new FileInputStream(filePath + "\\config\\config.properties"));
 			} catch (FileNotFoundException ex) {
 				ex.printStackTrace();
 			} catch (IOException ex) {
@@ -114,22 +109,20 @@ public class Main extends Application {
 			Double lDR = Double.parseDouble(properties.getProperty("learnDecreaseRate"));
 			Double mlr = Double.parseDouble(properties.getProperty("minLearnRate"));
 			Double lr = Double.parseDouble(properties.getProperty("learnRate"));
-			
-			
+
 			int Iteration = Integer.valueOf(properties.getProperty("Iteration"));// 訓練次數
-			
+
 			int whichAF = Integer.parseInt(properties.getProperty("whichAF"));// activationFunction
 			int whichOP = Integer.parseInt(properties.getProperty("whichOP"));// output layer style
-			int cyclePerOutput=Integer.parseInt(properties.getProperty("cyclePerOutput"));
-			
+			int cyclePerOutput = Integer.parseInt(properties.getProperty("cyclePerOutput"));
+
 			boolean isPocket;// 是否適用口袋鍵結值
 			if (Integer.parseInt(properties.getProperty("isPocket")) == 0) {
 				isPocket = false;
 			} else {
 				isPocket = true;
 			}
-			
-			
+
 			boolean isBatch;// 是否適用批次學習
 			if (Integer.parseInt(properties.getProperty("isBatch")) == 0) {
 				isBatch = false;
@@ -137,16 +130,7 @@ public class Main extends Application {
 				isBatch = true;
 			}
 			int batchNum = Integer.parseInt(properties.getProperty("batchNum"));
-			//int batchSize = dataSet.dataNum/batchNum;
-			
-			boolean isBN;// 是否適用批標準化
-			if (Integer.parseInt(properties.getProperty("isBN")) == 0) {
-				isBN = false;
-			} else {
-				isBN = true;
-			}
-			
-			
+
 			String learnRate = properties.getProperty("learnRate");
 			String IterationStr = properties.getProperty("Iteration");
 			String hiddenLayer = properties.getProperty("hiddenLayer");
@@ -157,7 +141,7 @@ public class Main extends Application {
 			// load properties end
 
 			// 讀取隱藏層層數,神經元數
-			String [] str = hiddenLayer.trim().split("\\s+");
+			String[] str = hiddenLayer.trim().split("\\s+");
 			int layerSize = str.length + 1;// 隱藏層+輸出層 總層數
 
 			// 記錄每層有多少神經元
@@ -169,91 +153,54 @@ public class Main extends Application {
 			}
 
 			NN nn;
-			
-			
-			
-			LinkedList<Double[]> datasAll=(LinkedList<Double[]>) dataSet.datasClone(dataSet.datas);
-			
-			long alltime=0;
-			double[] allrTest=new double[2];
-			double[] allrAll=new double[2];
-			allrTest[0]=0;
-			allrTest[1]=0;
-			allrAll[0]=0;
-			allrAll[1]=0;
-			
-			int cycles=Integer.parseInt(properties.getProperty("cycles"));
-			
-			for(int q=0;q<cycles;q++) {
-			
-				
-			if(isBatch) {
-				nn = new BNN(whichAF, whichOP, layers, dataSet.groupArray, dataSet.dataSize,cyclePerOutput,batchNum,isBN);
-			}else {
-				nn = new NN(whichAF, whichOP, layers, dataSet.groupArray, dataSet.dataSize,cyclePerOutput);
-			}
-			
-			long time =System.currentTimeMillis();
-			nn.train(Iteration, lr, lDR, mlr, isPocket, dataSet.traindatas);
-			time = System.currentTimeMillis()-time;
-			
-			LinkedList<Double[]> datasTest = (LinkedList<Double[]>) dataSet.datasClone(dataSet.testdatas);
-			datasAll=(LinkedList<Double[]>) dataSet.datasClone(dataSet.datas);
-			double rTest[] = nn.test(datasTest);
-			double rAll[] = nn.test(datasAll);
-			
-			
-			alltime+=time;
-			allrTest[0] += rTest[0];
-			allrTest[1] += rTest[1];
-			allrAll[0] += rAll[0];
-			allrAll[1] += rAll[1];
-			
-			
-			/*
-			
-			System.out.println("測資辨識率\t:\t" + rTest[0]
-					+"\n測資誤差\t:\t" + rTest[1]
-					+"\n-----------------"
-					+"\n整體辨識率\t:\t" + rAll[0]
-					+"\n整體誤差\t:\t" + rAll[1]
-					+"\n-----------------"
-					+"\n耗時\t:\t"+time
-					+"\n-------------------------------------");
-			*/
-			}
-			alltime/=cycles;
-			allrTest[0] /=cycles;
-			allrTest[1] /=cycles;
-			allrAll[0] /=cycles;
-			allrAll[1] /=cycles;
-			
-			
-			
-			//System.out.println("---------------");
 
-			/*
-			System.out.println("測資辨識率\t:\t" + allrTest[0]
-					+"\n測資誤差\t:\t" + allrTest[1]
-					+"\n-----------------"
-					+"\n整體辨識率\t:\t" + allrAll[0]
-					+"\n整體誤差\t:\t" + allrAll[1]
-					+"\n-----------------"
-					+"\n耗時\t:\t"+alltime
-					+"\n*******************************************************");
-					
-			*/
-			
-			text.setText("Recognition for TestData\t:\t" + allrTest[0]
-					+"\nMSE for TestData\t:\t" + allrTest[1]
-					+"\n-----------------"
-					+"\nRecognition for AllData\t:\t" + allrAll[0]
-					+"\nMSE for AllData\t:\t" + allrAll[1]
-					+"\n-----------------"
-					+"\nTime Consuming\t:\t"+alltime+"\tms");
-			
-			
-			
+			LinkedList<Double[]> datasAll = (LinkedList<Double[]>) dataSet.datasClone(dataSet.datas);
+
+			long alltime = 0;
+			double[] allrTest = new double[2];
+			double[] allrAll = new double[2];
+			allrTest[0] = 0;
+			allrTest[1] = 0;
+			allrAll[0] = 0;
+			allrAll[1] = 0;
+
+			int cycles = Integer.parseInt(properties.getProperty("cycles"));
+
+			for (int q = 0; q < cycles; q++) {
+
+				if (isBatch) {
+					nn = new BNN(whichAF, whichOP, layers, dataSet.groupArray, dataSet.dataSize, cyclePerOutput,
+							batchNum);
+				} else {
+					nn = new NN(whichAF, whichOP, layers, dataSet.groupArray, dataSet.dataSize, cyclePerOutput);
+				}
+
+				long time = System.currentTimeMillis();
+				nn.train(Iteration, lr, lDR, mlr, isPocket, dataSet.traindatas);
+				time = System.currentTimeMillis() - time;
+
+				LinkedList<Double[]> datasTest = (LinkedList<Double[]>) dataSet.datasClone(dataSet.testdatas);
+				datasAll = (LinkedList<Double[]>) dataSet.datasClone(dataSet.datas);
+				double rTest[] = nn.test(datasTest);
+				double rAll[] = nn.test(datasAll);
+
+				alltime += time;
+				allrTest[0] += rTest[0];
+				allrTest[1] += rTest[1];
+				allrAll[0] += rAll[0];
+				allrAll[1] += rAll[1];
+
+			}
+			alltime /= cycles;
+			allrTest[0] /= cycles;
+			allrTest[1] /= cycles;
+			allrAll[0] /= cycles;
+			allrAll[1] /= cycles;
+
+			text.setText("Recognition for TestData\t:\t" + allrTest[0] + "\nMSE for TestData\t:\t" + allrTest[1]
+					+ "\n-----------------" + "\nRecognition for AllData\t:\t" + allrAll[0] + "\nMSE for AllData\t:\t"
+					+ allrAll[1] + "\n-----------------" + "\nTime Consuming\t:\t" + alltime + "\tms");
+
 			// 繪圖
 			scR.getData().clear();
 			dataSet.draw(scR, datasAll);
@@ -298,13 +245,11 @@ public class Main extends Application {
 		scR.setId("Main-diagram");
 		scR.setMinSize(600, 600);
 
-		// .toExternalForm()
-		scene.getStylesheets().add(getClass().getResource("config/Main.css").toExternalForm());
+		scene.getStylesheets().add("file:///" + filePath.replace("\\", "/") + "/config/Main.css");
 
 		stage.setScene(scene);
 		stage.setTitle("多層感知機");
 		stage.show();
 	}
-
 
 }

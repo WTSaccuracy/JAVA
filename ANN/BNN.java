@@ -11,14 +11,11 @@ public class BNN extends NN {
 	// batch中第幾筆資料,第幾維,
 
 	Double[][][] dw;
-	BN[][] bn;
-	Boolean isBN;
 	// 層,神經元,鍵結值
 
-	BNN(int whichAF, int whichOP, int layers[], int groupArray[], int dataSize,int cyclePerOutput, int batchNum, boolean isBN) {
+	BNN(int whichAF, int whichOP, int layers[], int groupArray[], int dataSize,int cyclePerOutput, int batchNum) {
 		super(whichAF, whichOP, layers, groupArray, dataSize,cyclePerOutput);
 		this.batchNum = batchNum;
-		this.isBN = isBN;
 		dw = new Double[layerSize][max + 1][max + 1];
 	}
 
@@ -30,12 +27,7 @@ public class BNN extends NN {
 
 		woBatch = new Double[layerSize][max + 1][batchSize];
 		deltaBatch = new Double[layerSize][max + 1][batchSize];
-		bn = new BN[layerSize][max + 1];
-		for (int i = 0; i < layerSize; i++) {
-			for (int j = 0; j < layers[i]; j++) {
-				bn[i][j] = new BN(batchNum, batchSize);
-			}
-		}
+		
 
 		Iterator<Double[]> dItr = traindatas.iterator();
 		for (int i = 0; i < Iteration; i++) {// 訓練trainTime次
@@ -68,10 +60,6 @@ public class BNN extends NN {
 
 					}
 
-					// !!
-					if (isBN) {
-						bn[layerSize - 1][k].back(deltaBatch[layerSize - 1][k], lr);
-					}
 				}
 
 				// 隱藏層內倒傳
@@ -88,11 +76,6 @@ public class BNN extends NN {
 							}
 							deltaBatch[n][k][b] = diffAF(q) * sum;
 						}
-
-						if (isBN) {
-							bn[n][k].back(deltaBatch[n][k], lr);
-						}
-						// System.out.println("-------------");
 					}
 				}
 
@@ -165,8 +148,7 @@ public class BNN extends NN {
 				double r[] = calIdRate(w, traindatas, false);
 				Irate = r[0];// 預測辨識率
 				E = r[1];
-				System.out.println(Irate + "\t" + E);
-
+				//System.out.println(Irate + "\t" + E);
 			}
 
 			if (lr > mlr) {// 判斷學習率是否小於最小值
@@ -203,9 +185,6 @@ public class BNN extends NN {
 				woBatch[0][k][b] = sum;
 
 			}
-			if (isBN) {
-				bn[0][k].forward(woBatch[0][k]);
-			}
 			for (int b = 0; b < batchSize; b++) {
 				woBatch[0][k][b] = AF(woBatch[0][k][b]);
 			}
@@ -224,15 +203,6 @@ public class BNN extends NN {
 					}
 
 					woBatch[j][k][b] = sum;
-				}
-
-				if (isBN) {
-
-					// if (j < layerSize - 1) {// 輸出層不做批標準化
-
-					bn[j][k].forward(woBatch[j][k]);// 測試時會變1維 注意!
-
-					// }
 				}
 
 				for (int b = 0; b < batchSize; b++) {
@@ -264,9 +234,6 @@ public class BNN extends NN {
 				sum += data[m] * w[0][k][m + 1];
 			}
 			wo[0][k] = sum;
-			if (isBN) {
-				wo[0][k] = bn[0][k].forward(wo[0][k]);
-			}
 			wo[0][k] = AF(wo[0][k]);
 
 		}
@@ -277,12 +244,6 @@ public class BNN extends NN {
 					sum += wo[j - 1][m] * w[j][k][m + 1];
 				}
 				wo[j][k] = sum;
-
-				if (isBN) {
-					// if (j < layerSize - 1) {// 輸出層不做批標準化
-					wo[j][k] = bn[j][k].forward(wo[j][k]);
-					// }
-				}
 				wo[j][k] = AF(wo[j][k]);
 
 			}
@@ -311,18 +272,6 @@ public class BNN extends NN {
 		Iterator<Double[]> itr = datasLocal.iterator();
 		double E = 0;
 
-		// 平均標準差更新問題
-
-		if (isBN) {
-			for (int i = 0; i < layerSize - 1; i++) {
-				for (int j = 0; j < layers[i]; j++) {
-					// bn[i][j].testSet();
-				}
-			}
-		}
-		// 平均標準差更新問題
-
-		// System.out.println("-----------------------");
 
 		while (itr.hasNext()) {
 			data = itr.next();
